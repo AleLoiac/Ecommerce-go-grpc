@@ -1,0 +1,1 @@
+protoc user/userpb/eco.proto --go-grpc_out=. --go_out=.
