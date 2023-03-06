@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
 )
@@ -45,6 +46,50 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 	return &userpb.CreateUserResponse{
 		UserId: user.Id,
 	}, nil
+}
+
+func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
+
+	fmt.Printf("GetUser function is invoked with %v\n", req)
+
+	var user userpb.User
+
+	err := db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(req.UserId))
+		if err != nil {
+			return err
+		}
+
+		err = item.Value(func(val []byte) error {
+			err = proto.Unmarshal(val, &user)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+
+		return err
+	})
+
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, status.Errorf(
+				codes.NotFound,
+				fmt.Sprintf("User with ID '%s' not found", req.UserId),
+			)
+		} else {
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Failed to get user: %v", err),
+			)
+		}
+	}
+
+	return &userpb.GetUserResponse{
+		Username: user.Username,
+		Email:    user.Email,
+	}, nil
+
 }
 
 type server struct {
