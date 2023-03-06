@@ -8,6 +8,13 @@ service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
 }
 
+message user {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string password = 4;
+}
+
 message CreateUserRequest {
   string username = 1;
   string email = 2;
