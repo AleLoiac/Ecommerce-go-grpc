@@ -55,7 +55,7 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 	var user userpb.User
 
 	err := db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(req.UserId))
+		item, err := txn.Get([]byte(req.GetUserId()))
 		if err != nil {
 			return err
 		}

@@ -43,9 +43,30 @@ func unaryCreate(c userpb.UserServiceClient, reader *bufio.Reader) {
 	log.Printf("Response from CreateUser: %v", res.GetUserId())
 }
 
+func unaryGet(c userpb.UserServiceClient, reader *bufio.Reader) {
+
+	fmt.Println("Starting Unary RPC...")
+
+	var id string
+
+	fmt.Println("Get a user, id:")
+	id, _ = reader.ReadString('\n')
+	id = strings.TrimSpace(id)
+
+	req := &userpb.GetUserRequest{UserId: id}
+
+	res, err := c.GetUser(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Error while calling GetUser RPC: %v", err)
+	}
+	log.Printf("Username: %v", res.Username)
+	log.Printf("Email: %v", res.Email)
+
+}
+
 func main() {
 
-	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials())) //needs to be secured
+	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Could not connect: %v", err)
 	}
@@ -55,5 +76,6 @@ func main() {
 
 	c := userpb.NewUserServiceClient(cc)
 
-	unaryCreate(c, reader)
+	//unaryCreate(c, reader)
+	unaryGet(c, reader)
 }
