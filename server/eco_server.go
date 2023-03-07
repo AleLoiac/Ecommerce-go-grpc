@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Ecommerce/product/productpb"
 	"Ecommerce/user/userpb"
 	"context"
 	"fmt"
@@ -26,7 +27,7 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 		Password: req.GetPassword(),
 	}
 
-	err := db.Update(func(txn *badger.Txn) error {
+	err := usersDB.Update(func(txn *badger.Txn) error {
 		userBytes, err := proto.Marshal(user)
 		if err != nil {
 			return err
@@ -52,7 +53,7 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 
 	var user userpb.User
 
-	err := db.View(func(txn *badger.Txn) error {
+	err := usersDB.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetUserId()))
 		if err != nil {
 			return err
@@ -91,16 +92,20 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 
 type server struct {
 	userpb.UserServiceServer
+	productpb.ProductServiceServer
 }
 
-var db *badger.DB
+var usersDB *badger.DB
+var productsDB *badger.DB
 
 func main() {
 	fmt.Println("Server started...")
 
-	db, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db"))
+	usersDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Users_DB"))
+	productsDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Products_DB"))
 
-	defer db.Close()
+	defer usersDB.Close()
+	defer productsDB.Close()
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
@@ -109,6 +114,7 @@ func main() {
 
 	s := grpc.NewServer()
 	userpb.RegisterUserServiceServer(s, &server{})
+	productpb.RegisterProductServiceServer(s, &server{})
 
 	reflection.Register(s)
 
