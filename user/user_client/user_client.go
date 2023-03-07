@@ -76,6 +76,6 @@ func main() {
 
 	c := userpb.NewUserServiceClient(cc)
 
-	//unaryCreate(c, reader)
+	unaryCreate(c, reader)
 	unaryGet(c, reader)
 }

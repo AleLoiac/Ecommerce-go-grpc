@@ -22,9 +22,9 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 
 	user := &userpb.User{
 		Id:       uuid.New().String(),
-		Username: req.Username,
-		Email:    req.Email,
-		Password: req.Password,
+		Username: req.GetUsername(),
+		Email:    req.GetEmail(),
+		Password: req.GetPassword(),
 	}
 
 	err := db.Update(func(txn *badger.Txn) error {
@@ -32,7 +32,6 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 		if err != nil {
 			return err
 		}
-
 		return txn.Set([]byte(user.Id), userBytes)
 	})
 
@@ -44,7 +43,7 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 	}
 
 	return &userpb.CreateUserResponse{
-		UserId: user.Id,
+		UserId: user.GetId(),
 	}, nil
 }
 
@@ -59,15 +58,15 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 		if err != nil {
 			return err
 		}
-
 		err = item.Value(func(val []byte) error {
+			fmt.Printf("Retrieved user data from database: %v\n", val)
 			err = proto.Unmarshal(val, &user)
 			if err != nil {
+				fmt.Printf("Error unmarshaling user data: %v\n", err)
 				return err
 			}
 			return nil
 		})
-
 		return err
 	})
 
