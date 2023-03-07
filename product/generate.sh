@@ -1,0 +1,1 @@
+protoc product/productpb/product.proto --go-grpc_out=. --go_out=.
