@@ -3,7 +3,6 @@ package main
 import (
 	"Ecommerce/user/userpb"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/google/uuid"
@@ -18,7 +17,7 @@ import (
 
 func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
 
-	fmt.Printf("CreateUser function is invoked with %v\n", req)
+	fmt.Printf("CreateUser function is invoked with: %v\n", req)
 
 	user := &userpb.User{
 		Id:       uuid.New().String(),
@@ -28,7 +27,7 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 	}
 
 	err := db.Update(func(txn *badger.Txn) error {
-		userBytes, err := json.Marshal(user)
+		userBytes, err := proto.Marshal(user)
 		if err != nil {
 			return err
 		}
@@ -49,7 +48,7 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 
 func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
 
-	fmt.Printf("GetUser function is invoked with %v\n", req)
+	fmt.Printf("GetUser function is invoked with: %v\n", req)
 
 	var user userpb.User
 
@@ -59,7 +58,6 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 			return err
 		}
 		err = item.Value(func(val []byte) error {
-			fmt.Printf("Retrieved user data from database: %v\n", val)
 			err = proto.Unmarshal(val, &user)
 			if err != nil {
 				fmt.Printf("Error unmarshaling user data: %v\n", err)
