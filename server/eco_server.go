@@ -90,6 +90,40 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 
 }
 
+func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.Product, error) {
+
+	fmt.Printf("AddProduct function is invoked with: %v\n", req)
+
+	product := &productpb.Product{
+		Id:          uuid.New().String(),
+		Name:        req.GetName(),
+		Description: req.GetDescription(),
+		Price:       req.GetPrice(),
+	}
+
+	err := productsDB.Update(func(txn *badger.Txn) error {
+		productData, err := proto.Marshal(product)
+		if err != nil {
+			return err
+		}
+		return txn.Set([]byte(product.Id), productData)
+	})
+
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Failed to create product: %v", err),
+		)
+	}
+
+	return &productpb.Product{
+		Id:          product.GetId(),
+		Name:        product.GetName(),
+		Description: product.GetDescription(),
+		Price:       product.GetPrice(),
+	}, nil
+}
+
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
