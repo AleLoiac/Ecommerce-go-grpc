@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"io"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -68,6 +68,28 @@ func productGet(c productpb.ProductServiceClient, reader *bufio.Reader) {
 
 }
 
+func productList(c productpb.ProductServiceClient) {
+
+	fmt.Println("Starting Server Streaming RPC...")
+
+	req := &productpb.Empty{}
+
+	resStream, err := c.ListProducts(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Error while calling ListProducts RPC: %v", err)
+	}
+	for {
+		msg, err := resStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error while reading the stream: %v", err)
+		}
+		log.Printf("Listing products: %v", msg)
+	}
+}
+
 func main() {
 
 	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -76,9 +98,10 @@ func main() {
 	}
 	defer cc.Close()
 
-	reader := bufio.NewReader(os.Stdin)
+	//reader := bufio.NewReader(os.Stdin)
 	c := productpb.NewProductServiceClient(cc)
 
-	productCreate(c, reader)
-	productGet(c, reader)
+	//productCreate(c, reader)
+	//productCreate(c, reader)
+	productList(c)
 }

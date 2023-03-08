@@ -168,6 +168,36 @@ func (s *server) GetProduct(ctx context.Context, req *productpb.GetProductReques
 	}, nil
 }
 
+func (s *server) ListProducts(req *productpb.Empty, stream productpb.ProductService_ListProductsServer) error {
+
+	fmt.Println("ListProducts function is invoked with an empty request")
+
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchSize = 10
+	opts.PrefetchValues = false
+	err := productsDB.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			key := item.Key()
+			product, err := s.GetProduct(stream.Context(), &productpb.GetProductRequest{ProductId: string(key)})
+			if err != nil {
+				return err
+			}
+			if err = stream.Send(product); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
