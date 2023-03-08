@@ -124,6 +124,50 @@ func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductReq
 	}, nil
 }
 
+func (s *server) GetProduct(ctx context.Context, req *productpb.GetProductRequest) (*productpb.Product, error) {
+
+	fmt.Printf("GetUser function is invoked with: %v\n", req)
+
+	var product productpb.Product
+
+	err := productsDB.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(req.GetProductId()))
+		if err != nil {
+			return err
+		}
+		err = item.Value(func(val []byte) error {
+			err = proto.Unmarshal(val, &product)
+			if err != nil {
+				fmt.Printf("Error unmarshaling product data: %v\n", err)
+				return err
+			}
+			return nil
+		})
+		return err
+	})
+
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, status.Errorf(
+				codes.NotFound,
+				fmt.Sprintf("Product with ID '%s' not found", req.ProductId),
+			)
+		} else {
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Failed to get product: %v", err),
+			)
+		}
+	}
+
+	return &productpb.Product{
+		Id:          product.GetId(),
+		Name:        product.GetName(),
+		Description: product.GetDescription(),
+		Price:       product.GetPrice(),
+	}, nil
+}
+
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer

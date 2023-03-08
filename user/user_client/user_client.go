@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func unaryCreate(c userpb.UserServiceClient, reader *bufio.Reader) {
+func userCreate(c userpb.UserServiceClient, reader *bufio.Reader) {
 
 	fmt.Println("Starting Unary RPC...")
 
@@ -43,7 +43,7 @@ func unaryCreate(c userpb.UserServiceClient, reader *bufio.Reader) {
 	log.Printf("Response from CreateUser: %v", res.GetUserId())
 }
 
-func unaryGet(c userpb.UserServiceClient, reader *bufio.Reader) {
+func userGet(c userpb.UserServiceClient, reader *bufio.Reader) {
 
 	fmt.Println("Starting Unary RPC...")
 
@@ -76,6 +76,6 @@ func main() {
 
 	c := userpb.NewUserServiceClient(cc)
 
-	unaryCreate(c, reader)
-	unaryGet(c, reader)
+	userCreate(c, reader)
+	userGet(c, reader)
 }
