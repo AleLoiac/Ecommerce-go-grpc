@@ -126,7 +126,7 @@ func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductReq
 
 func (s *server) GetProduct(ctx context.Context, req *productpb.GetProductRequest) (*productpb.Product, error) {
 
-	fmt.Printf("GetUser function is invoked with: %v\n", req)
+	fmt.Printf("GetProduct function is invoked with: %v\n", req)
 
 	var product productpb.Product
 
