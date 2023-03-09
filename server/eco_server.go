@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Ecommerce/order/orderpb"
 	"Ecommerce/product/productpb"
 	"Ecommerce/user/userpb"
 	"context"
@@ -214,19 +215,23 @@ func (s *server) DeleteProduct(ctx context.Context, req *productpb.DeleteProduct
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
+	orderpb.OrderServiceServer
 }
 
 var usersDB *badger.DB
 var productsDB *badger.DB
+var ordersDB *badger.DB
 
 func main() {
 	fmt.Println("Server started...")
 
 	usersDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Users_DB"))
 	productsDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Products_DB"))
+	ordersDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Orders_DB"))
 
 	defer usersDB.Close()
 	defer productsDB.Close()
+	defer ordersDB.Close()
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
@@ -236,6 +241,7 @@ func main() {
 	s := grpc.NewServer()
 	userpb.RegisterUserServiceServer(s, &server{})
 	productpb.RegisterProductServiceServer(s, &server{})
+	orderpb.RegisterOrderServiceServer(s, &server{})
 
 	reflection.Register(s)
 
