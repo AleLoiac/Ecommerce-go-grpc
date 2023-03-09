@@ -106,6 +106,7 @@ func productDelete(c productpb.ProductServiceClient, reader *bufio.Reader) {
 	if err != nil {
 		log.Fatalf("Error while calling DeleteProduct RPC: %v", err)
 	}
+	fmt.Printf("Product with id %v successfully deleted\n", id)
 }
 
 func main() {
@@ -120,7 +121,8 @@ func main() {
 	c := productpb.NewProductServiceClient(cc)
 
 	//productCreate(c, reader)
-	//productCreate(c, reader)
+	productCreate(c, reader)
 	productList(c)
 	productDelete(c, reader)
+	productList(c)
 }
