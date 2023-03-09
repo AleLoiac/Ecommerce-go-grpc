@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -65,7 +66,6 @@ func productGet(c productpb.ProductServiceClient, reader *bufio.Reader) {
 	log.Printf("Name: %v", res.Name)
 	log.Printf("Description: %v", res.Description)
 	log.Printf("Price: %v", res.Price)
-
 }
 
 func productList(c productpb.ProductServiceClient) {
@@ -90,6 +90,24 @@ func productList(c productpb.ProductServiceClient) {
 	}
 }
 
+func productDelete(c productpb.ProductServiceClient, reader *bufio.Reader) {
+
+	fmt.Println("Starting Unary RPC...")
+
+	var id string
+
+	fmt.Println("Delete a product, id:")
+	id, _ = reader.ReadString('\n')
+	id = strings.TrimSpace(id)
+
+	req := &productpb.DeleteProductRequest{ProductId: id}
+
+	_, err := c.DeleteProduct(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Error while calling DeleteProduct RPC: %v", err)
+	}
+}
+
 func main() {
 
 	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -98,10 +116,11 @@ func main() {
 	}
 	defer cc.Close()
 
-	//reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(os.Stdin)
 	c := productpb.NewProductServiceClient(cc)
 
 	//productCreate(c, reader)
 	//productCreate(c, reader)
 	productList(c)
+	productDelete(c, reader)
 }

@@ -198,6 +198,19 @@ func (s *server) ListProducts(req *productpb.Empty, stream productpb.ProductServ
 
 }
 
+func (s *server) DeleteProduct(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.Empty, error) {
+
+	fmt.Printf("DeleteProduct function is invoked with %v\n", req)
+
+	err := productsDB.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte(req.GetProductId()))
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Cannot find product with id: %v", req.GetProductId()))
+	}
+	return &productpb.Empty{}, nil
+}
+
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
