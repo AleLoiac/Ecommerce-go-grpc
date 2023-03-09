@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -72,10 +71,6 @@ func main() {
 	}
 	defer cc.Close()
 
-	reader := bufio.NewReader(os.Stdin)
-
-	c := userpb.NewUserServiceClient(cc)
-
-	userCreate(c, reader)
-	userGet(c, reader)
+	//reader := bufio.NewReader(os.Stdin)
+	//c := userpb.NewUserServiceClient(cc)
 }

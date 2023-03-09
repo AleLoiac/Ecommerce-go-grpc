@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -117,12 +116,6 @@ func main() {
 	}
 	defer cc.Close()
 
-	reader := bufio.NewReader(os.Stdin)
-	c := productpb.NewProductServiceClient(cc)
-
-	//productCreate(c, reader)
-	productCreate(c, reader)
-	productList(c)
-	productDelete(c, reader)
-	productList(c)
+	//reader := bufio.NewReader(os.Stdin)
+	//c := productpb.NewProductServiceClient(cc)
 }
