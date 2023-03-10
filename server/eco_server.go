@@ -219,6 +219,38 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 	var items []*orderpb.OrderItem
 	var totalPrice float32
 
+	var user userpb.User
+
+	err := usersDB.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(req.GetUserId()))
+		if err != nil {
+			return err
+		}
+		err = item.Value(func(val []byte) error {
+			err = proto.Unmarshal(val, &user)
+			if err != nil {
+				fmt.Printf("Error unmarshaling user data: %v\n", err)
+				return err
+			}
+			return nil
+		})
+		return err
+	})
+
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, status.Errorf(
+				codes.NotFound,
+				fmt.Sprintf("User with ID '%s' not found", req.UserId),
+			)
+		} else {
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Failed to get user: %v", err),
+			)
+		}
+	}
+
 	for _, item := range req.GetItems() {
 		items = append(items, &orderpb.OrderItem{
 			ProductId: item.GetProductId(),
@@ -235,7 +267,7 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 		TotalPrice: totalPrice,
 	}
 
-	err := ordersDB.Update(func(txn *badger.Txn) error {
+	err = ordersDB.Update(func(txn *badger.Txn) error {
 		orderBytes, err := proto.Marshal(order)
 		if err != nil {
 			return err
