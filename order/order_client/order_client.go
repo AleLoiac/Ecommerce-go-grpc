@@ -31,7 +31,7 @@ func orderCreate(c orderpb.OrderServiceClient, reader *bufio.Reader) {
 		},
 	}
 
-	fmt.Println("Create new product, name:")
+	fmt.Println("Create new order, user id:")
 	userId, _ = reader.ReadString('\n')
 	userId = strings.TrimSpace(userId)
 
