@@ -212,6 +212,48 @@ func (s *server) DeleteProduct(ctx context.Context, req *productpb.DeleteProduct
 	return &productpb.Empty{}, nil
 }
 
+func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderRequest) (*orderpb.Order, error) {
+
+	fmt.Printf("CreateOrder function is invoked with %v\n", req)
+
+	var items []*orderpb.OrderItem
+	var totalPrice float32
+
+	order := &orderpb.Order{
+		Id:         uuid.New().String(),
+		UserId:     req.GetUserId(),
+		Items:      items,
+		TotalPrice: totalPrice,
+	}
+
+	err := ordersDB.Update(func(txn *badger.Txn) error {
+		orderBytes, err := proto.Marshal(order)
+		if err != nil {
+			return err
+		}
+		return txn.Set([]byte(order.Id), orderBytes)
+	})
+
+	for _, item := range req.GetItems() {
+		items = append(items, &orderpb.OrderItem{
+			ProductId: item.GetProductId(),
+			Quantity:  item.GetQuantity(),
+			Price:     item.GetPrice(),
+		})
+		totalPrice += float32(item.GetQuantity()) * item.GetPrice()
+	}
+
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Failed to create order: %v", err),
+		)
+	}
+
+	return order, nil
+
+}
+
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer

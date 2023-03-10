@@ -12,7 +12,7 @@ message Order {
   string id = 1;
   string user_id = 2;
   repeated OrderItem items = 3;
-  float totalPrice =4;
+  float totalPrice = 4;
 }
 
 message OrderItem {
