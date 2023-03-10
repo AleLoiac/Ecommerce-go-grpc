@@ -219,6 +219,15 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 	var items []*orderpb.OrderItem
 	var totalPrice float32
 
+	for _, item := range req.GetItems() {
+		items = append(items, &orderpb.OrderItem{
+			ProductId: item.GetProductId(),
+			Quantity:  item.GetQuantity(),
+			Price:     item.GetPrice(),
+		})
+		totalPrice += float32(item.GetQuantity()) * item.GetPrice()
+	}
+
 	order := &orderpb.Order{
 		Id:         uuid.New().String(),
 		UserId:     req.GetUserId(),
@@ -233,15 +242,6 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 		}
 		return txn.Set([]byte(order.Id), orderBytes)
 	})
-
-	for _, item := range req.GetItems() {
-		items = append(items, &orderpb.OrderItem{
-			ProductId: item.GetProductId(),
-			Quantity:  item.GetQuantity(),
-			Price:     item.GetPrice(),
-		})
-		totalPrice += float32(item.GetQuantity()) * item.GetPrice()
-	}
 
 	if err != nil {
 		return nil, status.Errorf(
