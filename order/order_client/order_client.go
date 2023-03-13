@@ -19,12 +19,12 @@ func orderCreate(c orderpb.OrderServiceClient, reader *bufio.Reader) {
 	var userId string
 
 	items := []*orderpb.OrderItem{
-		&orderpb.OrderItem{
+		{
 			ProductId: "1",
 			Quantity:  2,
 			Price:     3.2,
 		},
-		&orderpb.OrderItem{
+		{
 			ProductId: "2",
 			Quantity:  1,
 			Price:     2.1,
