@@ -28,12 +28,12 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 		Password: req.GetPassword(),
 	}
 
-	err := usersDB.Update(func(txn *badger.Txn) error {
+	err := DB.Update(func(txn *badger.Txn) error {
 		userBytes, err := proto.Marshal(user)
 		if err != nil {
 			return err
 		}
-		return txn.Set([]byte(user.Id), userBytes)
+		return txn.Set([]byte("user_"+user.Id), userBytes)
 	})
 
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 
 	var user userpb.User
 
-	err := usersDB.View(func(txn *badger.Txn) error {
+	err := DB.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetUserId()))
 		if err != nil {
 			return err
@@ -102,12 +102,12 @@ func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductReq
 		Price:       req.GetPrice(),
 	}
 
-	err := productsDB.Update(func(txn *badger.Txn) error {
+	err := DB.Update(func(txn *badger.Txn) error {
 		productData, err := proto.Marshal(product)
 		if err != nil {
 			return err
 		}
-		return txn.Set([]byte(product.Id), productData)
+		return txn.Set([]byte("product_"+product.Id), productData)
 	})
 
 	if err != nil {
@@ -131,7 +131,7 @@ func (s *server) GetProduct(ctx context.Context, req *productpb.GetProductReques
 
 	var product productpb.Product
 
-	err := productsDB.View(func(txn *badger.Txn) error {
+	err := DB.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetProductId()))
 		if err != nil {
 			return err
@@ -176,10 +176,12 @@ func (s *server) ListProducts(req *productpb.Empty, stream productpb.ProductServ
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchSize = 10
 	opts.PrefetchValues = false
-	err := productsDB.View(func(txn *badger.Txn) error {
+	prefix := []byte("product_")
+	opts.Prefix = prefix
+	err := DB.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
 			key := item.Key()
 			product, err := s.GetProduct(stream.Context(), &productpb.GetProductRequest{ProductId: string(key)})
@@ -203,7 +205,7 @@ func (s *server) DeleteProduct(ctx context.Context, req *productpb.DeleteProduct
 
 	fmt.Printf("DeleteProduct function is invoked with %v\n", req)
 
-	err := productsDB.Update(func(txn *badger.Txn) error {
+	err := DB.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(req.GetProductId()))
 	})
 	if err != nil {
@@ -221,7 +223,7 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 
 	var user userpb.User
 
-	err := usersDB.View(func(txn *badger.Txn) error {
+	err := DB.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetUserId()))
 		if err != nil {
 			return err
@@ -267,12 +269,12 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 		TotalPrice: totalPrice,
 	}
 
-	err = ordersDB.Update(func(txn *badger.Txn) error {
+	err = DB.Update(func(txn *badger.Txn) error {
 		orderBytes, err := proto.Marshal(order)
 		if err != nil {
 			return err
 		}
-		return txn.Set([]byte(order.Id), orderBytes)
+		return txn.Set([]byte("order_"+order.Id), orderBytes)
 	})
 
 	if err != nil {
@@ -292,21 +294,14 @@ type server struct {
 	orderpb.OrderServiceServer
 }
 
-// use only one DB
-var usersDB *badger.DB
-var productsDB *badger.DB
-var ordersDB *badger.DB
+var DB *badger.DB
 
 func main() {
 	fmt.Println("Server started...")
 
-	usersDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Users_DB"))
-	productsDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Products_DB"))
-	ordersDB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/db/Orders_DB"))
+	DB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/DB"))
 
-	defer usersDB.Close()
-	defer productsDB.Close()
-	defer ordersDB.Close()
+	defer DB.Close()
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
