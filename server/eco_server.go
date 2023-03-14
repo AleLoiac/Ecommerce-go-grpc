@@ -292,6 +292,7 @@ type server struct {
 	orderpb.OrderServiceServer
 }
 
+// use only one DB
 var usersDB *badger.DB
 var productsDB *badger.DB
 var ordersDB *badger.DB
