@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -48,6 +47,27 @@ func orderCreate(c orderpb.OrderServiceClient, reader *bufio.Reader) {
 
 }
 
+func orderGet(c orderpb.OrderServiceClient, reader *bufio.Reader) {
+
+	fmt.Println("Starting Unary RPC...")
+
+	var id string
+
+	fmt.Println("Get an order, id:")
+	id, _ = reader.ReadString('\n')
+	id = strings.TrimSpace(id)
+
+	req := &orderpb.GetOrderRequest{OrderId: id}
+
+	res, err := c.GetOrder(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Error while calling GetOrder RPC: %v", err)
+	}
+	log.Printf("User: %v", res.UserId)
+	log.Printf("Items: %v", res.Items)
+	log.Printf("Price: %v", res.TotalPrice)
+}
+
 func main() {
 
 	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -56,8 +76,6 @@ func main() {
 	}
 	defer cc.Close()
 
-	reader := bufio.NewReader(os.Stdin)
-	c := orderpb.NewOrderServiceClient(cc)
-
-	orderCreate(c, reader)
+	//reader := bufio.NewReader(os.Stdin)
+	//c := orderpb.NewOrderServiceClient(cc)
 }

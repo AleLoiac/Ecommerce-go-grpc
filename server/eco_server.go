@@ -288,6 +288,50 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 
 }
 
+func (s *server) GetOrder(ctx context.Context, req *orderpb.GetOrderRequest) (*orderpb.Order, error) {
+
+	fmt.Printf("GetOrder function is invoked with: %v\n", req)
+
+	var order orderpb.Order
+
+	err := DB.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(req.GetOrderId()))
+		if err != nil {
+			return err
+		}
+		err = item.Value(func(val []byte) error {
+			err = proto.Unmarshal(val, &order)
+			if err != nil {
+				fmt.Printf("Error unmarshaling order data: %v\n", err)
+				return err
+			}
+			return nil
+		})
+		return err
+	})
+
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil, status.Errorf(
+				codes.NotFound,
+				fmt.Sprintf("order with ID '%s' not found", req.OrderId),
+			)
+		} else {
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Failed to get order: %v", err),
+			)
+		}
+	}
+
+	return &orderpb.Order{
+		Id:         order.GetId(),
+		UserId:     order.GetUserId(),
+		Items:      order.GetItems(),
+		TotalPrice: order.GetTotalPrice(),
+	}, nil
+}
+
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
