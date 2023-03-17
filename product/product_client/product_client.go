@@ -118,4 +118,5 @@ func main() {
 
 	//reader := bufio.NewReader(os.Stdin)
 	//c := productpb.NewProductServiceClient(cc)
+
 }
