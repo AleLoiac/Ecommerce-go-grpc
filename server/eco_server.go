@@ -332,12 +332,14 @@ func (s *server) GetOrder(ctx context.Context, req *orderpb.GetOrderRequest) (*o
 	}, nil
 }
 
+// add a constructor for servers
 type server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
 	orderpb.OrderServiceServer
 }
 
+// DB has to become a server struct field
 var DB *badger.DB
 
 func main() {
