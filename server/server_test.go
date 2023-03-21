@@ -58,7 +58,7 @@ func TestGetProduct(t *testing.T) {
 		Price:       99.99,
 	}
 
-	err = DB.Update(func(txn *badger.Txn) error {
+	err = s.db.Update(func(txn *badger.Txn) error {
 		productData, err := proto.Marshal(product)
 		if err != nil {
 			return err

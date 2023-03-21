@@ -17,7 +17,7 @@ import (
 	"net"
 )
 
-func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
+func (s *Server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
 
 	fmt.Printf("CreateUser function is invoked with: %v\n", req)
 
@@ -28,7 +28,7 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 		Password: req.GetPassword(),
 	}
 
-	err := DB.Update(func(txn *badger.Txn) error {
+	err := s.db.Update(func(txn *badger.Txn) error {
 		userBytes, err := proto.Marshal(user)
 		if err != nil {
 			return err
@@ -48,13 +48,13 @@ func (s *server) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) 
 	}, nil
 }
 
-func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
+func (s *Server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
 
 	fmt.Printf("GetUser function is invoked with: %v\n", req)
 
 	var user userpb.User
 
-	err := DB.View(func(txn *badger.Txn) error {
+	err := s.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetUserId()))
 		if err != nil {
 			return err
@@ -91,7 +91,7 @@ func (s *server) GetUser(ctx context.Context, req *userpb.GetUserRequest) (*user
 
 }
 
-func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.Product, error) {
+func (s *Server) AddProduct(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.Product, error) {
 
 	fmt.Printf("AddProduct function is invoked with: %v\n", req)
 
@@ -102,7 +102,7 @@ func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductReq
 		Price:       req.GetPrice(),
 	}
 
-	err := DB.Update(func(txn *badger.Txn) error {
+	err := s.db.Update(func(txn *badger.Txn) error {
 		productData, err := proto.Marshal(product)
 		if err != nil {
 			return err
@@ -125,13 +125,13 @@ func (s *server) AddProduct(ctx context.Context, req *productpb.CreateProductReq
 	}, nil
 }
 
-func (s *server) GetProduct(ctx context.Context, req *productpb.GetProductRequest) (*productpb.Product, error) {
+func (s *Server) GetProduct(ctx context.Context, req *productpb.GetProductRequest) (*productpb.Product, error) {
 
 	fmt.Printf("GetProduct function is invoked with: %v\n", req)
 
 	var product productpb.Product
 
-	err := DB.View(func(txn *badger.Txn) error {
+	err := s.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetProductId()))
 		if err != nil {
 			return err
@@ -169,7 +169,7 @@ func (s *server) GetProduct(ctx context.Context, req *productpb.GetProductReques
 	}, nil
 }
 
-func (s *server) ListProducts(req *productpb.Empty, stream productpb.ProductService_ListProductsServer) error {
+func (s *Server) ListProducts(req *productpb.Empty, stream productpb.ProductService_ListProductsServer) error {
 
 	fmt.Println("ListProducts function is invoked with an empty request")
 
@@ -178,7 +178,7 @@ func (s *server) ListProducts(req *productpb.Empty, stream productpb.ProductServ
 	opts.PrefetchValues = false
 	prefix := []byte("product_")
 	opts.Prefix = prefix
-	err := DB.View(func(txn *badger.Txn) error {
+	err := s.db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(opts)
 		defer it.Close()
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
@@ -201,11 +201,11 @@ func (s *server) ListProducts(req *productpb.Empty, stream productpb.ProductServ
 
 }
 
-func (s *server) DeleteProduct(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.Empty, error) {
+func (s *Server) DeleteProduct(ctx context.Context, req *productpb.DeleteProductRequest) (*productpb.Empty, error) {
 
 	fmt.Printf("DeleteProduct function is invoked with %v\n", req)
 
-	err := DB.Update(func(txn *badger.Txn) error {
+	err := s.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(req.GetProductId()))
 	})
 	if err != nil {
@@ -214,7 +214,7 @@ func (s *server) DeleteProduct(ctx context.Context, req *productpb.DeleteProduct
 	return &productpb.Empty{}, nil
 }
 
-func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderRequest) (*orderpb.Order, error) {
+func (s *Server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderRequest) (*orderpb.Order, error) {
 
 	fmt.Printf("CreateOrder function is invoked with %v\n", req)
 
@@ -223,7 +223,7 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 
 	var user userpb.User
 
-	err := DB.View(func(txn *badger.Txn) error {
+	err := s.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetUserId()))
 		if err != nil {
 			return err
@@ -269,7 +269,7 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 		TotalPrice: totalPrice,
 	}
 
-	err = DB.Update(func(txn *badger.Txn) error {
+	err = s.db.Update(func(txn *badger.Txn) error {
 		orderBytes, err := proto.Marshal(order)
 		if err != nil {
 			return err
@@ -288,13 +288,13 @@ func (s *server) CreateOrder(ctx context.Context, req *orderpb.CreateOrderReques
 
 }
 
-func (s *server) GetOrder(ctx context.Context, req *orderpb.GetOrderRequest) (*orderpb.Order, error) {
+func (s *Server) GetOrder(ctx context.Context, req *orderpb.GetOrderRequest) (*orderpb.Order, error) {
 
 	fmt.Printf("GetOrder function is invoked with: %v\n", req)
 
 	var order orderpb.Order
 
-	err := DB.View(func(txn *badger.Txn) error {
+	err := s.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(req.GetOrderId()))
 		if err != nil {
 			return err
@@ -332,22 +332,27 @@ func (s *server) GetOrder(ctx context.Context, req *orderpb.GetOrderRequest) (*o
 	}, nil
 }
 
-// add a constructor for servers
-type server struct {
+type Server struct {
 	userpb.UserServiceServer
 	productpb.ProductServiceServer
 	orderpb.OrderServiceServer
+	db *badger.DB
 }
 
-// DB has to become a server struct field
-var DB *badger.DB
+func NewServer(db *badger.DB) *Server {
+	return &Server{db: db}
+}
+
+// DB has to become a Server struct field
+//var DB *badger.DB
 
 func main() {
 	fmt.Println("Server started...")
 
-	DB, _ = badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/DB"))
+	db, _ := badger.Open(badger.DefaultOptions("/Users/aless/Desktop/Go/Ecommerce/DB"))
+	defer db.Close()
 
-	defer DB.Close()
+	server := NewServer(db)
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
@@ -355,9 +360,9 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	userpb.RegisterUserServiceServer(s, &server{})
-	productpb.RegisterProductServiceServer(s, &server{})
-	orderpb.RegisterOrderServiceServer(s, &server{})
+	userpb.RegisterUserServiceServer(s, server)
+	productpb.RegisterProductServiceServer(s, server)
+	orderpb.RegisterOrderServiceServer(s, server)
 
 	reflection.Register(s)
 
