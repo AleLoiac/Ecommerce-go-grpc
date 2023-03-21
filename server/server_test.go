@@ -99,7 +99,7 @@ func TestGetProduct(t *testing.T) {
 		t.Errorf("GetProduct returned incorrect product price: got %v, want %v", got.Price, 99.99)
 	}
 
-	err = DB.Update(func(txn *badger.Txn) error {
+	err = s.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(req.GetProductId()))
 	})
 	if err != nil {
