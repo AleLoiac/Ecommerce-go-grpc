@@ -3,111 +3,92 @@ package main
 import (
 	"Ecommerce/product/productpb"
 	"context"
-	"fmt"
 	"github.com/dgraph-io/badger/v3"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
-	"log"
+	"google.golang.org/protobuf/proto"
 	"testing"
 )
 
 func TestAddProduct(t *testing.T) {
-
-	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Mock database
+	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
 	if err != nil {
-		log.Fatalf("Could not connect: %v", err)
+		t.Fatalf("Failed to create mock database: %v", err)
 	}
-	defer cc.Close()
+	defer db.Close()
 
-	c := productpb.NewProductServiceClient(cc)
+	// Server instance
+	server := &Server{db: db}
 
 	req := &productpb.CreateProductRequest{
 		Name:        "Test Product",
-		Description: "Test Product Description",
-		Price:       99.99,
+		Description: "Sample product for testing",
+		Price:       9.99,
 	}
 
-	got, err := c.AddProduct(context.Background(), req)
-
+	got, err := server.AddProduct(context.Background(), req)
 	if err != nil {
-		t.Fatalf("AddProduct() error = %v, wantErr nil", err)
+		t.Fatalf("Failed to create product: %v", err)
 	}
 
-	if got.GetName() != req.GetName() || got.GetDescription() != req.GetDescription() || got.GetPrice() != req.GetPrice() {
-		t.Errorf("AddProduct() = %v, want %v", got, req)
+	if got.Name != req.Name {
+		t.Errorf("Expected name %q, got %q", req.Name, got.Name)
+	}
+	if got.Description != req.Description {
+		t.Errorf("Expected description %q, got %q", req.Description, got.Description)
+	}
+	if got.Price != req.Price {
+		t.Errorf("Expected price %v, got %v", req.Price, got.Price)
+	}
+	if got.Id == "" {
+		t.Error("Expected non-empty ID")
 	}
 
+	//if got.GetName() != req.GetName() || got.GetDescription() != req.GetDescription() || got.GetPrice() != req.GetPrice() {
+	//	t.Errorf("AddProduct() = %v, want %v", got, req)
+	//}
 }
 
-// not working
 func TestGetProduct(t *testing.T) {
 
-	cc, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
 	if err != nil {
-		log.Fatalf("Could not connect: %v", err)
+		t.Fatalf("Failed to create mock database: %v", err)
 	}
-	defer cc.Close()
+	defer db.Close()
+
+	server := &Server{db: db}
 
 	product := &productpb.Product{
-		Id:          "Product Id",
-		Name:        "Product Name",
-		Description: "Product Description",
-		Price:       99.99,
+		Id:          "test-product",
+		Name:        "Test Product",
+		Description: "A sample product for testing",
+		Price:       9.99,
 	}
 
-	err = s.db.Update(func(txn *badger.Txn) error {
-		productData, err := proto.Marshal(product)
-		if err != nil {
-			return err
-		}
-		return txn.Set([]byte(product.GetId()), productData)
-	})
-
+	productData, err := proto.Marshal(product)
 	if err != nil {
-		err = status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Failed to create test product: %v", err),
-		)
-		if err != nil {
-			return
-		}
-		return
+		t.Fatalf("Failed to marshal product: %v", err)
 	}
-
-	c := productpb.NewProductServiceClient(cc)
-
-	req := &productpb.GetProductRequest{ProductId: "Product Id"}
-
-	got, err := c.GetProduct(context.Background(), req)
-	if err != nil {
-		t.Fatalf("GetProduct() error = %v, wantErr nil", err)
-	}
-
-	if got.Id != "Product Id" {
-		t.Errorf("GetProduct returned incorrect product ID: got %v, want %v", got.Id, "Product Id")
-	}
-	if got.Name != "Product Name" {
-		t.Errorf("GetProduct returned incorrect product name: got %v, want %v", got.Name, "Product Name")
-	}
-	if got.Description != "Product Description" {
-		t.Errorf("GetProduct returned incorrect product description: got %v, want %v", got.Description, "Product Description")
-	}
-	if got.Price != 99.99 {
-		t.Errorf("GetProduct returned incorrect product price: got %v, want %v", got.Price, 99.99)
-	}
-
-	err = s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete([]byte(req.GetProductId()))
+	err = db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte("product_"+product.Id), productData)
 	})
 	if err != nil {
-		err := status.Errorf(codes.NotFound, fmt.Sprintf("Cannot find product with id: %v", req.GetProductId()))
-		if err != nil {
-			return
-		}
-		return
+		t.Fatalf("Failed to store product: %v", err)
 	}
 
+	req := &productpb.GetProductRequest{ProductId: "product_" + product.Id}
+	res, err := server.GetProduct(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Failed to get product: %v", err)
+	}
+
+	if res.Name != product.Name {
+		t.Errorf("Expected name %q, got %q", product.Name, res.Name)
+	}
+	if res.Description != product.Description {
+		t.Errorf("Expected description %q, got %q", product.Description, res.Description)
+	}
+	if res.Price != product.Price {
+		t.Errorf("Expected price %v, got %v", product.Price, res.Price)
+	}
 }
