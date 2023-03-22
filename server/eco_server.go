@@ -343,7 +343,6 @@ func NewServer(db *badger.DB) *Server {
 	return &Server{db: db}
 }
 
-// DB has to become a Server struct field
 //var DB *badger.DB
 
 func main() {
