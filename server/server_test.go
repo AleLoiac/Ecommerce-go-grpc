@@ -59,7 +59,7 @@ func TestGetProduct(t *testing.T) {
 	server := &Server{db: db}
 
 	product := &productpb.Product{
-		Id:          "test-product",
+		Id:          "test-id",
 		Name:        "Test Product",
 		Description: "A sample product for testing",
 		Price:       9.99,
