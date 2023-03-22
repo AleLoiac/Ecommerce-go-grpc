@@ -178,6 +178,7 @@ func (s *Server) ListProducts(req *productpb.Empty, stream productpb.ProductServ
 	opts.PrefetchValues = false
 	prefix := []byte("product_")
 	opts.Prefix = prefix
+
 	err := s.db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(opts)
 		defer it.Close()

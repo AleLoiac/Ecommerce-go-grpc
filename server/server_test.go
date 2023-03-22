@@ -92,3 +92,59 @@ func TestGetProduct(t *testing.T) {
 		t.Errorf("Expected price %v, got %v", product.Price, res.Price)
 	}
 }
+
+func TestListProducts(t *testing.T) {
+
+	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
+
+	server := &Server{db: db}
+
+	firstProduct := &productpb.Product{
+		Id:          "test-id-1",
+		Name:        "Test Product one",
+		Description: "A sample product for testing",
+		Price:       9.99,
+	}
+
+	secondProduct := &productpb.Product{
+		Id:          "test-id-2",
+		Name:        "Test Product two",
+		Description: "A sample product for testing",
+		Price:       9.99,
+	}
+
+	firstProductData, err := proto.Marshal(firstProduct)
+	if err != nil {
+		t.Fatalf("Failed to marshal product: %v", err)
+	}
+	err = db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte("product_"+firstProduct.Id), firstProductData)
+	})
+	if err != nil {
+		t.Fatalf("Failed to store product: %v", err)
+	}
+
+	secondProductData, err := proto.Marshal(secondProduct)
+	if err != nil {
+		t.Fatalf("Failed to marshal product: %v", err)
+	}
+	err = db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte("product_"+secondProduct.Id), secondProductData)
+	})
+	if err != nil {
+		t.Fatalf("Failed to store product: %v", err)
+	}
+
+	req := &productpb.Empty{}
+
+	//implement stream
+	err = server.ListProducts(req, nil)
+	if err != nil {
+		t.Fatalf("Failed to list products: %v", err)
+	}
+
+}
