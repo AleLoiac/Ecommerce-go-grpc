@@ -4,6 +4,8 @@ import (
 	"Ecommerce/product/productpb"
 	"context"
 	"github.com/dgraph-io/badger/v3"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"testing"
 )
@@ -91,4 +93,45 @@ func TestGetProduct(t *testing.T) {
 	if res.Price != product.Price {
 		t.Errorf("Expected price %v, got %v", product.Price, res.Price)
 	}
+}
+
+func TestDeleteProduct(t *testing.T) {
+
+	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
+
+	server := &Server{db: db}
+
+	product := &productpb.Product{
+		Id:          "test-id",
+		Name:        "Test Product",
+		Description: "A sample product for testing",
+		Price:       9.99,
+	}
+
+	productData, err := proto.Marshal(product)
+	if err != nil {
+		t.Fatalf("Failed to marshal product: %v", err)
+	}
+	err = db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte("product_"+product.Id), productData)
+	})
+	if err != nil {
+		t.Fatalf("Failed to store product: %v", err)
+	}
+
+	req := &productpb.DeleteProductRequest{ProductId: "product_" + product.Id}
+	_, err = server.DeleteProduct(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Failed to delete product: %v", err)
+	}
+
+	_, err = server.GetProduct(context.Background(), &productpb.GetProductRequest{ProductId: "product_" + product.Id})
+	if status.Code(err) != codes.NotFound {
+		t.Fatalf("Expected error not found, but got %v", err)
+	}
+
 }
