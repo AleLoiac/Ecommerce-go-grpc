@@ -55,4 +55,6 @@ Then, chose the desired API package, service and method. For example:
 
 You can also use Postman to try the APIs, click on "NEW" and then on "gRPC Request".
 
+Set the server URL to "0.0.0.0:50051" and select an API from the list.
+
 Remember to use the Example Message feature to check how the requests are structured.
