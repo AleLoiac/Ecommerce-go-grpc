@@ -344,8 +344,6 @@ func NewServer(db *badger.DB) *Server {
 	return &Server{db: db}
 }
 
-//var DB *badger.DB
-
 func main() {
 	fmt.Println("Server started...")
 
