@@ -38,6 +38,8 @@ The e-commerce platform supports the following API methods:
 * CreateOrder
 * GetOrder
 
+### Evans
+
 To use the API, start the server and run Evans:
 `evans -p 50051 -r`.
 
@@ -48,6 +50,8 @@ Then, chose the desired API package, service and method. For example:
 `service ProductService`
 
 `call ListProducts`
+
+### Postman
 
 You can also use Postman to try the APIs, click on "NEW" and then on "gRPC Request".
 
